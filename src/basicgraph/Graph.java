@@ -1,14 +1,14 @@
 package basicgraph;
 
-import java.util.ArrayList;
+import util.GraphLoader;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.TreeMap;
-
-import util.GraphLoader;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
 
 /** An abstract class that implements a directed graph. 
  * The graph may have self-loops, parallel edges. 
@@ -121,8 +121,11 @@ public abstract class Graph {
      * @return The degree sequence of this graph.
      */
     public List<Integer> degreeSequence() {
-        // XXX: Implement in part 1 of week 2
-        return null;
+        return IntStream.range(0, numVertices)
+                .boxed()
+                .map(v -> getNeighbors(v).size() + getInNeighbors(v).size())
+                .sorted(Collections.reverseOrder())
+                .collect(Collectors.toList());
     }
 
     /**
@@ -164,7 +167,7 @@ public abstract class Graph {
     /**
      * Test whether some vertex in the graph is labeled
      * with a given index.
-     * @param The index being checked
+     * @param v The index being checked
      * @return True if there's a vertex in the graph with this index; false otherwise.
      */
     public boolean hasVertex(int v)
@@ -175,7 +178,7 @@ public abstract class Graph {
     /**
      * Test whether some vertex in the graph is labeled
      * with a given String label
-     * @param The String label being checked
+     * @param s The String label being checked
      * @return True if there's a vertex in the graph with this label; false otherwise.
      */
     public boolean hasVertex(String s)
@@ -185,8 +188,8 @@ public abstract class Graph {
 
     /**
      * Add label to an unlabeled vertex in the graph.
-     * @param The index of the vertex to be labeled.
-     * @param The label to be assigned to this vertex.
+     * @param v The index of the vertex to be labeled.
+     * @param s The label to be assigned to this vertex.
      */
     public void addLabel(int v, String s) {
         if (v < getNumVertices() && !vertexLabels.containsKey(v))
@@ -200,20 +203,17 @@ public abstract class Graph {
 
     /**
      * Report label of vertex with given index
-     * @param The integer index of the vertex
+     * @param v The integer index of the vertex
      * @return The String label of this vertex
      */
     public String getLabel(int v) {
-        if (vertexLabels.containsKey(v)) {
-            return vertexLabels.get(v);
-        }
-        else return null;
+        return vertexLabels.getOrDefault(v, null);
     }
 
     /**
      * Report index of vertex with given label.
      * (Assume distinct labels for vertices.)
-     * @param The String label of the vertex
+     * @param s The String label of the vertex
      * @return The integer index of this vertex
      */
     public int getIndex(String s) {
@@ -241,6 +241,7 @@ public abstract class Graph {
         System.out.println("****");
         System.out.println("Roads / intersections:");
         GraphAdjList graphFromFile = new GraphAdjList();
+//        GraphLoader.loadRoadMap("data/maps/academ.map", graphFromFile);
         GraphLoader.loadRoadMap("data/testdata/simpletest.map", graphFromFile);
         System.out.println(graphFromFile);
 

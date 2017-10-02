@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 /** A class that implements a directed graph. 
  * The graph may have self-loops, parallel edges. 
@@ -25,7 +25,7 @@ public class GraphAdjList extends Graph {
      * Create a new empty Graph
      */
     public GraphAdjList () {
-        adjListsMap = new HashMap<Integer,ArrayList<Integer>>();
+        adjListsMap = new HashMap<>();
     }
 
     /**
@@ -33,7 +33,7 @@ public class GraphAdjList extends Graph {
      */
     public void implementAddVertex() {
         int v = getNumVertices();
-        ArrayList<Integer> neighbors = new ArrayList<Integer>();
+        ArrayList<Integer> neighbors = new ArrayList<>();
         adjListsMap.put(v,  neighbors);
     }
 
@@ -44,7 +44,6 @@ public class GraphAdjList extends Graph {
      */
     public void implementAddEdge(int v, int w) {
         (adjListsMap.get(v)).add(w);
-
     }
 
     /**
@@ -58,7 +57,7 @@ public class GraphAdjList extends Graph {
      * @return List<Integer> a list of indices of vertices.
      */
     public List<Integer> getNeighbors(int v) {
-        return new ArrayList<Integer>(adjListsMap.get(v));
+        return new ArrayList<>(adjListsMap.get(v));
     }
 
     /**
@@ -72,7 +71,7 @@ public class GraphAdjList extends Graph {
      * @return List<Integer> a list of indices of vertices.
      */
     public List<Integer> getInNeighbors(int v) {
-        List<Integer> inNeighbors = new ArrayList<Integer>();
+        List<Integer> inNeighbors = new ArrayList<>();
         for (int u : adjListsMap.keySet()) {
             //iterate through all edges in u's adjacency list and
             //add u to the inNeighbor list of v whenever an edge
@@ -94,9 +93,8 @@ public class GraphAdjList extends Graph {
      * @param v the index of vertex.
      * @return List<Integer> a list of indices of vertices.
      */
-     public List<Integer> getDistance2(int v) {
-         // XXX: Implement this method in week 2
-         return null;
+    public List<Integer> getDistance2(int v) {
+        return getNeighbors(v).stream().flatMap(n -> getNeighbors(n).stream()).collect(Collectors.toList());
     }
 
     /**
@@ -104,16 +102,17 @@ public class GraphAdjList extends Graph {
      * @return the String
      */
     public String adjacencyString() {
-        String s = "Adjacency list";
-        s += " (size " + getNumVertices() + "+" + getNumEdges() + " integers):";
+        StringBuilder s = new StringBuilder();
+        s.append("Adjacency list");
+        s.append(" (size ").append(getNumVertices()).append("+").append(getNumEdges()).append(" integers):");
 
         for (int v : adjListsMap.keySet()) {
-            s += "\n\t"+v+": ";
+            s.append("\n\t").append(v).append(": ");
             for (int w : adjListsMap.get(v)) {
-                s += w+", ";
+                s.append(w).append(", ");
             }
         }
-        return s;
+        return s.toString();
     }
 
 
