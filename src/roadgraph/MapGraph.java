@@ -10,7 +10,6 @@ package roadgraph;
 
 import java.util.*;
 import java.util.function.Consumer;
-import java.util.stream.Collectors;
 
 import geography.GeographicPoint;
 import geography.RoadSegment;
@@ -24,13 +23,14 @@ import util.GraphLoader;
  *
  */
 public class MapGraph {
-    HashMap<GeographicPoint, Map<GeographicPoint, RoadSegment>> intersections = new HashMap<>();
+    private HashMap<GeographicPoint, Map<GeographicPoint, RoadSegment>> intersections = new HashMap<>();
 
     /**
      * Create a new empty MapGraph
      */
     public MapGraph()
     {
+        // TODO: Implement in this constructor in WEEK 3
     }
 
     /**
