@@ -30,7 +30,6 @@ public class MapGraph {
      */
     public MapGraph()
     {
-        // TODO: Implement in this constructor in WEEK 3
     }
 
     /**
