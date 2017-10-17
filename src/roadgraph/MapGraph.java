@@ -23,7 +23,8 @@ import util.GraphLoader;
  *
  */
 public class MapGraph {
-    private HashMap<GeographicPoint, Map<GeographicPoint, RoadSegment>> intersections = new HashMap<>();
+
+    private HashMap<GeographicPoint, Intersection> intersections = new HashMap<>();
 
     /**
      * Create a new empty MapGraph
@@ -56,7 +57,7 @@ public class MapGraph {
      */
     public int getNumEdges()
     {
-        return intersections.values().stream().map(Map::size).mapToInt(i -> i).sum();
+        return intersections.values().stream().map(i -> i.getNeighbors().size()).mapToInt(i -> i).sum();
     }
 
 
@@ -68,7 +69,7 @@ public class MapGraph {
      * was already in the graph, or the parameter is null).
      */
     public boolean addVertex(GeographicPoint location) {
-        return location != null && intersections.putIfAbsent(location, new HashMap<>()) == null;
+        return location != null && intersections.putIfAbsent(location, new Intersection(location)) == null;
     }
 
     /**
@@ -88,10 +89,10 @@ public class MapGraph {
 
         if (from == null || to == null || roadName == null || roadType == null || length < 0 ||
             !intersections.containsKey(from) || !intersections.containsKey(to) ||
-            intersections.get(from).containsKey(to))
+            intersections.get(from).hasNeighbor(to))
             throw new IllegalArgumentException();
 
-        intersections.get(from).put(to, new RoadSegment(from, to, new ArrayList<>(), roadName, roadType, length));
+        intersections.get(from).addNeighbor(to, new RoadSegment(from, to, new ArrayList<>(), roadName, roadType, length));
     }
 
 
@@ -192,21 +193,37 @@ public class MapGraph {
     }
 
 
-    private List<GeographicPoint> createPath(GeographicPoint goal, HashMap<GeographicPoint, GeographicPoint> path) {
+    /**
+     * Reconstruct the path from the traversal history
+     * @param goal Goal point
+     * @param traversalHistory History of graph traversal, maps nodes to previously visited ones.
+     *
+     * @return list of points forming a path
+     */
+    private List<GeographicPoint> createPath(GeographicPoint goal, HashMap<GeographicPoint, GeographicPoint> traversalHistory) {
         LinkedList<GeographicPoint> list = new LinkedList<>();
 
         GeographicPoint curr = goal;
-        while (path.containsKey(curr)) {
+        while (traversalHistory.containsKey(curr)) {
             list.addFirst(curr);
-            curr = path.get(curr);
+            curr = traversalHistory.get(curr);
         }
         list.addFirst(curr);
 
         return list;
     }
 
+    /**
+     * Search the path from the start point to the goal point in the graph using the breadth first search
+     * @param start Start point
+     * @param goal Goal point
+     * @param nodeSearched A hook for visualization.
+     * @param traversalHistory History of graph traversal, maps nodes to previously visited ones. If path is found it may
+     *             be used to reconstruct the path.
+     * @return true is path is found, false otherwise
+     */
     private boolean bfsSearch(GeographicPoint start, GeographicPoint goal, Consumer<GeographicPoint> nodeSearched,
-                              HashMap<GeographicPoint, GeographicPoint> path) {
+                              HashMap<GeographicPoint, GeographicPoint> traversalHistory) {
         HashSet<GeographicPoint> visited = new HashSet<>();
         Queue<GeographicPoint> queue = new LinkedList<>();
 
@@ -226,15 +243,20 @@ public class MapGraph {
                 .forEach(n -> {
                     queue.add(n);
                     visited.add(n);
-                    path.put(n, curr);
+                    traversalHistory.put(n, curr);
                 });
         }
 
         return false;
     }
 
-    private Set<GeographicPoint> getNeighbors(GeographicPoint node) {
-        return intersections.get(node).keySet();
+    /**
+     * Get neighbors of intersection represented by this point
+     * @param point
+     * @return set of neighbors as list of geographical points
+     */
+    private Set<GeographicPoint> getNeighbors(GeographicPoint point) {
+        return intersections.get(point).getNeighbors();
     }
 
 
