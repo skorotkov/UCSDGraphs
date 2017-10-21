@@ -4,7 +4,9 @@ import geography.GeographicPoint;
 import geography.RoadSegment;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A class which represents the intersection.
@@ -14,7 +16,8 @@ import java.util.Set;
  */
 public class Intersection {
     private GeographicPoint point;
-    private HashMap<GeographicPoint, RoadSegment> neighbors;
+    private double cost = Double.POSITIVE_INFINITY;
+    private HashMap<Intersection, Road> neighbors;
 
     /**
      * Create new intersection
@@ -29,8 +32,9 @@ public class Intersection {
      * Returns all neighbors of this intersection
      * @return set of geographical points of all neighbors
      */
-    public Set<GeographicPoint> getNeighbors() {
-        return neighbors.keySet();
+    public Map<Intersection, Double> getNeighbors() {
+        return neighbors.entrySet().stream()
+                .collect(Collectors.toMap(Map.Entry::getKey, e -> e.getValue().getLength()));
     }
 
     /**
@@ -38,7 +42,7 @@ public class Intersection {
      * @param point to check
      * @return true if the passed point is neighbor of this one
      */
-    public boolean hasNeighbor(GeographicPoint point) {
+    public boolean hasNeighbor(Intersection point) {
         return neighbors.containsKey(point);
     }
 
@@ -47,7 +51,24 @@ public class Intersection {
      * @param neighbor point of the neighbor intersection
      * @param readToNeighbor road leading to the neighbor intersection
      */
-    public void addNeighbor(GeographicPoint neighbor, RoadSegment readToNeighbor) {
+    public void addNeighbor(Intersection neighbor, Road readToNeighbor) {
         neighbors.put(neighbor, readToNeighbor);
     }
+
+    public double getCost() {
+        return cost;
+    }
+
+    public void setCost(double cost) {
+        this.cost = cost;
+    }
+
+    public void resetCost() {
+        this.cost = Double.POSITIVE_INFINITY;
+    }
+
+    public GeographicPoint getPoint() {
+        return point;
+    }
+
 }

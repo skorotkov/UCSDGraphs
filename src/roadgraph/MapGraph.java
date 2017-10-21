@@ -10,9 +10,9 @@ package roadgraph;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import geography.GeographicPoint;
-import geography.RoadSegment;
 import util.GraphLoader;
 
 /**
@@ -89,10 +89,12 @@ public class MapGraph {
 
         if (from == null || to == null || roadName == null || roadType == null || length < 0 ||
             !intersections.containsKey(from) || !intersections.containsKey(to) ||
-            intersections.get(from).hasNeighbor(to))
-            throw new IllegalArgumentException();
+            intersections.get(from).hasNeighbor(intersections.get(to)))
+            //throw new IllegalArgumentException();
+            return;
 
-        intersections.get(from).addNeighbor(to, new RoadSegment(from, to, new ArrayList<>(), roadName, roadType, length));
+        intersections.get(from).addNeighbor(
+                intersections.get(to), new Road(from, to, new ArrayList<>(), roadName, roadType, length));
     }
 
 
@@ -137,7 +139,7 @@ public class MapGraph {
     public List<GeographicPoint> dijkstra(GeographicPoint start, GeographicPoint goal) {
         // Dummy variable for calling the search algorithms
         // You do not need to change this method.
-        Consumer<GeographicPoint> temp = (x) -> {};
+        Consumer<GeographicPoint> temp = (x) -> System.out.println(x.toString());
         return dijkstra(start, goal, temp);
     }
 
@@ -152,12 +154,11 @@ public class MapGraph {
     public List<GeographicPoint> dijkstra(GeographicPoint start,
                                           GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
     {
-        // TODO: Implement this method in WEEK 4
-
-        // Hook for visualization.  See writeup.
-        //nodeSearched.accept(next.getLocation());
-
-        return null;
+        HashMap<GeographicPoint, GeographicPoint> path = new HashMap<>();
+        if (weightedSearch(start, goal, nodeSearched, path, QueueEntry::compareTo))
+            return createPath(goal, path);
+        else
+            return null;
     }
 
     /** Find the path from start to goal using A-Star search
@@ -169,7 +170,7 @@ public class MapGraph {
      */
     public List<GeographicPoint> aStarSearch(GeographicPoint start, GeographicPoint goal) {
         // Dummy variable for calling the search algorithms
-        Consumer<GeographicPoint> temp = (x) -> {};
+        Consumer<GeographicPoint> temp = (x) -> System.out.println(x.toString());
         return aStarSearch(start, goal, temp);
     }
 
@@ -184,12 +185,12 @@ public class MapGraph {
     public List<GeographicPoint> aStarSearch(GeographicPoint start,
                                              GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
     {
-        // TODO: Implement this method in WEEK 4
-
-        // Hook for visualization.  See writeup.
-        //nodeSearched.accept(next.getLocation());
-
-        return null;
+        HashMap<GeographicPoint, GeographicPoint> path = new HashMap<>();
+        if (weightedSearch(start, goal, nodeSearched, path,
+                Comparator.comparingDouble(a -> a.getCost() + a.getIntersection().getPoint().distance(goal))))
+            return createPath(goal, path);
+        else
+            return null;
     }
 
 
@@ -250,13 +251,54 @@ public class MapGraph {
         return false;
     }
 
+    private boolean weightedSearch(GeographicPoint start, GeographicPoint goal, Consumer<GeographicPoint> nodeSearched,
+                                   HashMap<GeographicPoint, GeographicPoint> traversalHistory, Comparator<QueueEntry> comparator) {
+        HashSet<Intersection> visited = new HashSet<>();
+        PriorityQueue<QueueEntry> queue = new PriorityQueue<>(comparator);
+
+        intersections.values().forEach(Intersection::resetCost);
+
+        Intersection startNode = intersections.get(start);
+        startNode.setCost(0);
+        queue.add(QueueEntry.of(startNode, startNode.getCost()));
+
+        int counter = 0;
+
+        while(!queue.isEmpty()) {
+            Intersection curr = queue.remove().getIntersection();
+            counter++;
+            if (visited.contains(curr))
+                continue;
+            nodeSearched.accept(curr.getPoint());
+
+            visited.add(curr);
+            if (curr.getPoint().equals(goal)) {
+                System.out.println("counter=" + counter);
+                return true;
+            }
+
+            curr.getNeighbors()
+                .entrySet()
+                .stream()
+                .filter(e -> !visited.contains(e.getKey()))
+                .filter(e -> curr.getCost() + e.getValue() < e.getKey().getCost())
+                .forEach(e -> {
+                    e.getKey().setCost(curr.getCost() + e.getValue());
+                    queue.add(QueueEntry.of(e.getKey(), e.getKey().getCost()));
+                    traversalHistory.put(e.getKey().getPoint(), curr.getPoint());
+                });
+        }
+
+        return false;
+    }
+
     /**
      * Get neighbors of intersection represented by this point
      * @param point
      * @return set of neighbors as list of geographical points
      */
     private Set<GeographicPoint> getNeighbors(GeographicPoint point) {
-        return intersections.get(point).getNeighbors();
+        return intersections.get(point).getNeighbors().entrySet().stream().map(e -> e.getKey().getPoint()).collect(Collectors.toSet());
     }
 
 
@@ -275,7 +317,7 @@ public class MapGraph {
          * the Week 3 End of Week Quiz, EVEN IF you score 100% on the
          * programming assignment.
          */
-        /*
+/*
         MapGraph simpleTestMap = new MapGraph();
         GraphLoader.loadRoadMap("data/testdata/simpletest.map", simpleTestMap);
 
@@ -283,7 +325,9 @@ public class MapGraph {
         GeographicPoint testEnd = new GeographicPoint(8.0, -1.0);
 
         System.out.println("Test 1 using simpletest: Dijkstra should be 9 and AStar should be 5");
+        System.out.println("Test 1 Dijkstra");
         List<GeographicPoint> testroute = simpleTestMap.dijkstra(testStart,testEnd);
+        System.out.println("Test 1 AStar");
         List<GeographicPoint> testroute2 = simpleTestMap.aStarSearch(testStart,testEnd);
 
 
@@ -294,7 +338,9 @@ public class MapGraph {
         testStart = new GeographicPoint(32.869423, -117.220917);
         testEnd = new GeographicPoint(32.869255, -117.216927);
         System.out.println("Test 2 using utc: Dijkstra should be 13 and AStar should be 5");
+        System.out.println("Test 2 Dijkstra");
         testroute = testMap.dijkstra(testStart,testEnd);
+        System.out.println("Test 2 AStar");
         testroute2 = testMap.aStarSearch(testStart,testEnd);
 
 
@@ -302,13 +348,15 @@ public class MapGraph {
         testStart = new GeographicPoint(32.8674388, -117.2190213);
         testEnd = new GeographicPoint(32.8697828, -117.2244506);
         System.out.println("Test 3 using utc: Dijkstra should be 37 and AStar should be 10");
+        System.out.println("Test 3 Dijkstra");
         testroute = testMap.dijkstra(testStart,testEnd);
+        System.out.println("Test 3 AStar");
         testroute2 = testMap.aStarSearch(testStart,testEnd);
-        */
 
+*/
 
         /* Use this code in Week 3 End of Week Quiz */
-        /*MapGraph theMap = new MapGraph();
+        MapGraph theMap = new MapGraph();
         System.out.print("DONE. \nLoading the map...");
         GraphLoader.loadRoadMap("data/maps/utc.map", theMap);
         System.out.println("DONE.");
@@ -320,7 +368,6 @@ public class MapGraph {
         List<GeographicPoint> route = theMap.dijkstra(start,end);
         List<GeographicPoint> route2 = theMap.aStarSearch(start,end);
 
-        */
 
     }
 }
